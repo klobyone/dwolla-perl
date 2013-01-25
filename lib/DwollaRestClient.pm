@@ -309,7 +309,7 @@ sub register
     
     my $errors = 0;
 
-    if ($type ne 'Personal' && $type ne 'Commercial' && $type eq 'NonProfit') {
+    if ($type ne 'Personal' && $type ne 'Commercial' && $type ne 'NonProfit') {
         $self->set_error("Please enter a valid account type.");
         $errors++;
     }
