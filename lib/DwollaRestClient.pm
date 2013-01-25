@@ -281,7 +281,7 @@ sub users_nearby
 #   phone         - Phone number.
 #   date_of_birth - Date of birth.
 #   accept_terms  - Has the new user accepted the terms?
-#   type          - User type ('Personal','Business')
+#   type          - User type ('Personal',Commercial','NonProfit)
 #   organization  - Organization.
 #   ein           - Employee Identifer Number
 #
@@ -309,7 +309,7 @@ sub register
     
     my $errors = 0;
 
-    if ($type ne 'Personal' && $type ne 'Business') {
+    if ($type ne 'Personal' && $type ne 'Commercial' && $type eq 'NonProfit') {
         $self->set_error("Please enter a valid account type.");
         $errors++;
     }
@@ -692,11 +692,14 @@ sub balance
 #
 # Parameters:
 #   self               - Object instance.
-#   sourceid           - Fund source Id.
+#   pin                - Dwolla pin.
+#   destid             - Destination Id.
 #   amount             - Transaction amount.
-#   stype              - Source type.
-#   notes              - Transaction Id.
+#   dtype              - Destination type.
+#   notes              - Transaction notes..
 #   facilitator_amount - Faciltitator amount. 
+#   assume_costs       - Assume Dwolla costs?
+#   fund_source        - Fund source. Default: 'balance'
 #
 # Returns:
 #   Request Id or array or false on error.
@@ -724,6 +727,11 @@ sub send
         $errors++;
     }
 
+    if (!defined($amount)) {
+        $self->set_error('Please supply a valid amount.');
+        $errors++;
+    }
+
     if ($errors) {
         return 0;
     }
@@ -740,6 +748,84 @@ sub send
     };
 
     my $response = $self->_post("transactions/send",$params);
+
+    return $response;
+}
+
+# Function: guest_send
+#
+# Send funds to a destination user, from a non-Dwolla user's bank account.
+#
+# Parameters:
+#   self         - Object instance.
+#   destid       - Destination Id.
+#   amount       - Transaction amount.
+#   first_name   - First Name.
+#   last_name    - Last name.
+#   email        - Email address.
+#   trnnum       - Transit routing number.
+#   acctnum      - Account number.
+#   accttype     - Account type ('Checking','Savings')
+#   assume_costs - Assume Dwolla costs?
+#   dtype        - Destination type.
+#   notes        - Transaction Id.
+#   group_id     - ID specified by the client application.
+#   addtl_fees   - Additional faciliator fees (Array of anonymous hashes)
+#
+# Returns
+#  Transaction info or false (0) on error
+sub guest_send
+{
+    my $self         = shift;
+    my $destid       = shift;
+    my $amount       = shift;
+    my $first_name   = shift;
+    my $last_name    = shift;
+    my $email        = shift;
+    my $trnnum       = shift;
+    my $acctnum      = shift;
+    my $accttype     = shift;
+    my $assume_costs = shift || 0;
+    my $dtype        = shift || 'Dwolla';
+    my $notes        = shift || '';
+    my $group_id     = shift || undef;
+    my $addtl_fees   = shift || undef;
+
+    my $errors = 0;
+
+    if (!defined($destid)) {
+        $self->set_error('Please supply a valid destination.');
+        $errors++;
+    }
+
+    if (!defined($amount)) {
+        $self->set_error('Please supply a valid amount.');
+        $errors++;
+    }
+
+    if ($errors) {
+        return 0;
+    }
+
+    my $params = {
+        'client_id'       => $self->{'api_key'},
+        'client_secret'   => $self->{'api_secret'},
+        'destinationId'   => $destid,
+        'destinationType' => $dtype,
+        'amount'          => $amount,
+        'emailAddress'    => $email,
+        'accountNumber'   => $acctnum,
+        'routingNumber'   => $trnnum,
+        'accountType'     => $accttype,
+        'firstName'       => $first_name,
+        'lastName'        => $last_name,
+        'assumeCosts'     => $assume_costs,
+        'notes'           => $notes,
+        'groupId'         => $group_id,
+        'additionalFees'  => $addtl_fees
+    };
+
+    my $response = $self->_post("transactions/guestsend",$params);
 
     return $response;
 }
@@ -1183,7 +1269,10 @@ sub get_errors
 
 # Function: set_debug_mode
 #
-# Toggle debug mode on / off,
+# Toggle debug mode on / off.
+# NOTE: Turning this on could potentially write sensitive information to
+#       the screen / command-line. So, using this in production is not
+#       advisable. 
 #
 # Parameters:
 #   self - Object instance.
@@ -1391,25 +1480,33 @@ DwollaRestClient - Perl extension to access the Dwolla REST API.
 =head1 SYNOPSIS
 
   use DwollaRestClient;
-  
+
+  # Application data in script  
+
   my $key    = '';
   my $secret = '';
 
   $api = DwollaRestClient->new($key,$secret);
 
-=head1 DESCRIPTION
+  # Application data in external file. 
 
-Perl extension to access the Dwolla REST API.
+  $api = DwollaRestClient->new();
+  $api->set_api_config_from_file('/usr/local/etc/dwolla.conf');
 
-=head2 EXPORT
+=head1 EXAMPLES
 
-None by default.
+https://github.com/klobyone/dwolla-perl
 
 =head1 SEE ALSO
 
 http://developers.dwolla.com/dev/
 
-Chris Kloberdanz, <lt>klobyone@gmail.com<gt>
+=head1 PLANNED ENHANCEMENTS
+
+Possibly refactor by grouping parameters together into objects to reduce
+the large number of arguments to methods like register().
+
+Provide better tests using Test::Class / Test::More
 
 =head1 COPYRIGHT AND LICENSE
 
