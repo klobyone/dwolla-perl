@@ -1,4 +1,4 @@
-package DwollaRestClient;
+package WebService::Dwolla;
 
 use 5.010001;
 use strict;
@@ -1649,25 +1649,25 @@ __END__
 
 =head1 NAME
 
-DwollaRestClient - Perl extension to access the Dwolla REST API.
+WebService::Dwolla - Perl extension to access the Dwolla REST API.
 
 =head1 SYNOPSIS
 
   NOTE: This module is in it's early stages. I would urge that it not be used
         in production code yet.
 
-  use DwollaRestClient;
+  use WebService::Dwolla;
 
   # Application data in script  
 
   my $key    = '';
   my $secret = '';
 
-  $api = DwollaRestClient->new($key,$secret);
+  $api = WebService::Dwolla->new($key,$secret);
 
   # Application data in external file. 
 
-  $api = DwollaRestClient->new();
+  $api = WebService::Dwolla->new();
   $api->set_api_config_from_file('/usr/local/etc/dwolla.conf');
 
 =head1 EXAMPLES

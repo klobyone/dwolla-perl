@@ -1,6 +1,6 @@
-Revision history for Perl extension DwollaRestClient.
+Revision history for Perl extension WebService::Dwolla.
 
 0.01  Sat Jan 12 22:50:54 2013
 	- original version; created by h2xs 1.23 with options
-		-XAn DwollaRestClient
+		-XAn WebService::Dwolla
 

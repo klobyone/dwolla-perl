@@ -2,5 +2,5 @@ Changes
 Makefile.PL
 MANIFEST
 README
-t/DwollaRestClient.t
-lib/DwollaRestClient.pm
+t/WebService-Dwolla.t
+lib/WebService/Dwolla.pm

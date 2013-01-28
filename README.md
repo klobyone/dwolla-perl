@@ -22,7 +22,7 @@ NOTE: This module is in the very early stages. Do not use this for anything but 
 
 The easiest way to install this module is via the CPAN command-line interface.
 
-`cpan> install DwollaRestClient`
+`cpan> install WebService::Dwolla`
 
 It also be can obtained from [here](http://search.cpan.org/~klobyone/). If done
 this way you will have to resolve the dependecies yourself.

@@ -1,12 +1,12 @@
 #! /usr/bin/perl
 
-use DwollaRestClient;
+use WebService::Dwolla;
 use CGI;
 use Data::Dumper;
 
 my $redirect_url = 'http://192.168.11.14/cgi-bin/dwolla.cgi'; 
 
-my $api = DwollaRestClient->new(undef,undef,$redirect_url);
+my $api = WebService::Dwolla->new(undef,undef,$redirect_url);
 
 $api->set_api_config_from_file('/usr/local/etc/dwolla_api.conf');
 

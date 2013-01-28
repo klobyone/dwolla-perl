@@ -3,10 +3,10 @@
 use strict;
 use warnings;
 
-use DwollaRestClient;
+use WebService::Dwolla;
 use Data::Dumper;
 
-my $api = DwollaRestClient->new(); 
+my $api = WebService::Dwolla->new(); 
 
 # Set key, secret, and OAuth token from config file.
 $api->set_api_config_from_file('/usr/local/etc/dwolla_api.conf');
