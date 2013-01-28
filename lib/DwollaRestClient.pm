@@ -13,9 +13,11 @@ use Digest::HMAC;
 use IO::File;
 
 use constant {
-    API_SERVER => 'https://www.dwolla.com/oauth/rest',
-    AUTH_URL   => 'https://www.dwolla.com/oauth/v2/authenticate',
-    TOKEN_URL  => 'https://www.dwolla.com/oauth/v2/token'
+    API_SERVER   => 'https://www.dwolla.com/oauth/rest',
+    AUTH_URL     => 'https://www.dwolla.com/oauth/v2/authenticate',
+    TOKEN_URL    => 'https://www.dwolla.com/oauth/v2/token',
+    GATEWAY_URL  => 'https://www.dwolla.com/payment/request',
+    CHECKOUT_URL => 'https://www.dwolla.com/payment/checkout'
 };
 
 # Function: new
@@ -190,11 +192,67 @@ sub set_token
     $self->{'oauth_token'} = $token;
 }
 
+# Function: set_mode
+#
+# Set mode.
+#
+# Parameters:
+#   self - Object instance.
+#   mode - Mode ('test' / 'live').
+#
+# Returns:
+#   Void or false (0) on error.
+sub set_mode
+{
+    my $self = shift;
+    my $mode = shift;
+
+    if ($mode ne 'test' && $mode ne 'live') {
+        $self->set_error("Invalid mode. Please use 'test' / 'live'.");
+        return 0;
+    }
+
+    $self->{'mode'} = $mode;
+}
+
+# Function: get_mode
+#
+# Get mode.
+#
+# Parameters:
+#   self - Object instance.
+#
+# Returns
+#   Mode
+sub get_mode
+{
+    my $self = shift;
+
+    return $self->{'mode'};
+}
+
+# Function: get_token
+#
+# Get current OAuth token.
+#
+# Parameters:
+#   self  - Object instance.
+#   token - Existing OAuth token.
+#
+# Returns:
+#   Void
+sub get_token
+{
+    my $self = shift;
+
+    return $self->{'oauth_token'};
+}
+
 # Function: me
 #
 # Gets information about user with token.
 #
-# Parameters
+# Parameters:
 #   self - Object instance.
 #
 # Returns
@@ -212,11 +270,11 @@ sub me
 #
 # Gets information about user specified by id.
 #
-# Parameters
+# Parameters:
 #   self - object instance.
 #   id   - user id.
 #
-# Returns
+# Returns:
 #   Anonymous hash of user info.
 sub get_user
 {
@@ -237,12 +295,12 @@ sub get_user
 #
 # Gets list of users given geo-coordinates.
 #
-# Parameters
+# Parameters:
 #   self - Object instance.
 #   lat  - Latitude.
 #   long - Longitude.
 #
-# Returns
+# Returns:
 #   An array of anonymous hashes containing user info.
 sub users_nearby
 {
@@ -487,7 +545,7 @@ sub add_funding_source
         $self->set_error('Please supply a valid account number.');
         $errors++;
     }
-    if (!defined($trnnum) || $trnnum =~ /[0-9]{9}/) {
+    if (!defined($trnnum) || $trnnum =~ /^[0-9]{9}$/) {
         $self->set_error('Please supply a valid routing number.');
         $errors++;
     }
@@ -599,7 +657,7 @@ sub withdraw
     }
     
     if (!defined($amount)) {
-        $self->set_error('Please supply an amount');
+        $self->set_error('Please supply an amount.');
         $errors++;
     }
 
@@ -1137,9 +1195,13 @@ sub add_gateway_product
     my $self        = shift;
     my $name        = shift;
     my $price       = shift;
-    my $quantity    = shift || 1;
+    my $quantity    = shift || undef;
     my $description = shift || '';
     
+    if (!defined($quantity)) {
+        $quantity = 1;
+    }
+
     my $product = {
         'Name'        => $name,
         'Price'       => $price,
@@ -1150,11 +1212,105 @@ sub add_gateway_product
     push(@{$self->{'gateway_session'}},$product);
 }
 
+# Function: get_gateway_url
+#
+# Creates and executes Server-to-Server checkout request.
+#
+# Parameters:
+#   self                  - Object instance.
+#   orderid               - Order Id.
+#   discount              - Discount amount.
+#   shipping              - Shipping amount.
+#   tax                   - Tax ammount.
+#   notes                 - Transaction notes.
+#   callback              - Callback URL
+#   allow_funding_sources - Allow funding sources? (1 - yes; 0 - no)
+#
+# Returns:
+#   Gateway URL
 sub get_gateway_url
 {
-    my $self = shift;
+    my $self                  = shift;
+    my $destid                = shift;
+    my $orderid               = shift;
+    my $discount              = shift || 0;
+    my $shipping              = shift || 0;
+    my $tax                   = shift || 0;
+    my $notes                 = shift || '';
+    my $callback              = shift || undef;
+    my $allow_funding_sources = shift;
+
+    if (!$self->is_id_valid($destid)) {
+        $self->set_error("Please supply a valid Dwolla Id.");
+        return 0;
+    }
+
+    if (!defined($allow_funding_sources)) {
+        $allow_funding_sources = 1;
+    }
+
+    my $subtotal = 0;
+
+    foreach my $product (@{$self->{'gateway_session'}}) {
+        $subtotal += $product->{'Price'} * $product->{'Quantity'};
+    }
+
+    my $total = sprintf("%.2f",($subtotal - abs($discount) + $shipping + $tax));
+
+    my $request = {
+        'Key'                 => $self->{'api_key'},
+        'Secret'              => $self->{'api_secret'},
+        'Test'                => ($self->{'mode'} eq 'test') ? 1 : 0,
+        'AllowFundingSources' => ($allow_funding_sources) ? 'true' : 'false',
+        'PurchaseOrder'       => {
+            'DestinationId'   => $destid,
+            'OrderItems'      => $self->{'gateway_session'},
+            'Discount'        => (abs($discount) * -1),
+            'Shipping'        => $shipping,
+            'Tax'             => $tax,
+            'Total'           => $total,
+            'Notes'           => $notes,
+        }
+    };
+    
+    if (defined($self->{'redirect_uri'})) {
+        $request->{'Redirect'} = $self->{'redirect_uri'};
+    }
+    
+    if (defined($callback)) {
+        $request->{'Callback'} = $callback;
+    }
+    
+    if (defined($orderid)) {
+        $request->{'OrderId'} = $orderid;
+    }
+    
+    my $response = $self->_api_request(GATEWAY_URL,'POST',$request);
+
+    if ($response != 0) {
+        if ($response->{'Result'} ne 'Success') {
+            $self->set_error($response->{'Message'});
+            return 0;
+        }
+    } else {
+        return $response;
+    }
+
+    return CHECKOUT_URL . '/' . $response->{'CheckoutId'};
 }
 
+# Function: verify_gateway_signature
+#
+# Verify a signature that came back with an offsite gateway redirect.
+#
+# Parameters:
+#   self        - Object instance.
+#   signature   - HMAC signature.
+#   checkout_id - Checkout Id.
+#   amount      - Transaction amount.
+#
+# Returns:
+#   1 - valid; 0 invalid 
 sub verify_gateway_signature
 {
     my $self        = shift;
@@ -1196,12 +1352,30 @@ sub verify_gateway_signature
 
 # Function: very_webhook_signature
 #
-# NOTE: NOT YET IMPLEMENTED
 # Verify the signature from Webhook notifications.
 #
+# Parameters:
+#   self    - Object instance.
+#   sheader - Signature header.
+#   body    - Request body.
+#
+# Returns:
+#   1 - valid; 0 - invalid;
 sub verify_webhook_signature
 {
-    my $self = shift;
+    my $self    = shift;
+    my $sheader = shift;
+    my $body    = shift;
+
+    my $hmac = Digest::HMAC_SHA1->new($body,$self->{'api_secret'});
+    my $hash = $hmac->hexdigest;
+
+    if ($hash ne $sheader) {
+        $self->set_error('Dwolla signature verification failed.');
+        return 0;
+    }
+
+    return 1;
 }
 
 # Function: is_id_valid
@@ -1478,6 +1652,9 @@ __END__
 DwollaRestClient - Perl extension to access the Dwolla REST API.
 
 =head1 SYNOPSIS
+
+  NOTE: This module is in it's early stages. I would urge that it not be used
+        in production code yet.
 
   use DwollaRestClient;
 
