@@ -5,12 +5,12 @@ NOTE: This module is in the very early stages. Do not use this for anything but 
 
 ## Version
 
-0.1
+0.2
 
 ## Requrements (Module Dependcies)
 
 * LWP::UserAgent
-* Net::SSLeay
+* Crypt::SSLeay
 * Digest::HMAC_SHA1
 * URI::Escape
 * Data::Dumper
@@ -43,6 +43,10 @@ This repo includes various usage examples, including:
 * Webhook notifications [webhook.cgi]
 
 ## Changelog
+
+0.2
+
+* Added dependenies to Makefile.PL. Added / corrected documentation. Added examples to MANIFEST.
 
 0.1
 
