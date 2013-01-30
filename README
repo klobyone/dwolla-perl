@@ -15,7 +15,7 @@ DEPENDENCIES
 This module requires these other modules and libraries:
 
   LWP::UserAgent
-  Net::SSLeay
+  Crypt::SSLeay
   Digest::HMAC_SHA1
   URI::Escape
   Data::Dumper

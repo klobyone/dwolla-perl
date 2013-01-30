@@ -4,3 +4,14 @@ MANIFEST
 README
 t/WebService-Dwolla.t
 lib/WebService/Dwolla.pm
+examples/account_info.pl
+examples/balance.pl
+examples/contacts.pl
+examples/funding_sources.pl
+examples/gateway.cgi
+examples/listings.pl
+examples/oauth.cgi
+examples/register.pl
+examples/request.pl
+examples/send.pl
+examples/webhook.cgi

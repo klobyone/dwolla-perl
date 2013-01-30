@@ -1,10 +1,12 @@
-package WebService::Dwolla;
+# package: WebService::Dwolla
+#   Perl module to interact with Dwolla's OAuth+REST API
+ package WebService::Dwolla;
 
 use 5.010001;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use LWP::UserAgent;
 use JSON;
@@ -240,7 +242,7 @@ sub get_mode
 #   token - Existing OAuth token.
 #
 # Returns:
-#   Void
+#   OAuth token
 sub get_token
 {
     my $self = shift;
@@ -322,7 +324,7 @@ sub users_nearby
 
 # Function: register
 #
-# Register a new Dwolla account.sub register
+# Register a new Dwolla account.
 #
 # Parameters:
 #   self          - Object instance.
