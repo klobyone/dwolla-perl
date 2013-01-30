@@ -3,4 +3,6 @@ Revision history for Perl extension WebService::Dwolla.
 0.01  Sat Jan 12 22:50:54 2013
 	- original version; created by h2xs 1.23 with options
 		-XAn WebService::Dwolla
+0.02  Tue Jan 29 22:50:54 2013
+    - Added dependenies to CPAN. Added / corrected documentation. Added examples to MANIFEST.
 
