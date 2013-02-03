@@ -31,6 +31,7 @@ if (!$acct1) {
 }
 
 # Example 3: Get account information for an account given an email.
+# NOTE: Got this from PHP API exmaples, but it doesn't seem to be implemented.
 
 my $acct2 = $api->get_user('michael@dwolla.com');
 if (!$acct2) {

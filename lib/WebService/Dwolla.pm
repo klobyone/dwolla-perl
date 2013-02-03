@@ -6,7 +6,7 @@ use 5.010001;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use LWP::UserAgent;
 use JSON;
@@ -35,7 +35,7 @@ use constant {
 #   mode         - Mode. Default: 'live'
 #   debug_mode   - Debug mode. Default: 0 (Off)
 #
-# Returns
+# Returns:
 #   Object instance.
 sub new
 {
@@ -62,9 +62,9 @@ sub new
     return $self;
 }
 
-# Function : set_api_config_from_file
+# Function: set_api_config_from_file
 #
-# Sets required API information from configuration file formatted like:
+# Sets required API information from configuration file.
 #   key=APIKEY
 #   secret=APISECRET
 #   token=OAUTHTOKEN
@@ -180,11 +180,11 @@ sub request_token
 #
 # Manually set OAuth token.
 #
-# Parameters
+# Parameters:
 #   self  - Object instance.
 #   token - Existing OAuth token.
 #
-# Returns
+# Returns:
 #   Void
 sub set_token
 {
@@ -224,7 +224,7 @@ sub set_mode
 # Parameters:
 #   self - Object instance.
 #
-# Returns
+# Returns:
 #   Mode
 sub get_mode
 {
@@ -257,7 +257,7 @@ sub get_token
 # Parameters:
 #   self - Object instance.
 #
-# Returns
+# Returns:
 #   Anonymous hash of user info.
 sub me
 {
@@ -282,6 +282,11 @@ sub get_user
 {
     my $self = shift;
     my $id   = shift;
+
+    if (!$self->is_id_valid($id)) {
+        #$self->set_error("Please enter a valid Dwolla Id.");
+        #return 0;
+    }
 
     my $params = {
         'client_id'     => $self->{'api_key'},
@@ -449,14 +454,14 @@ sub contacts
 # This call can return nearby venues on Foursquare but not Dwolla, they will
 # have an Id of "null"
 #
-# Parameters
+# Parameters:
 #   self  - object instance.
 #   lat   - Latitude.
 #   long  - Longitude.
 #   range - Range to search (miles).
-#   limit - Limit results to self number.
+#   limit - Limit results to this number.
 #
-# Returns
+# Returns:
 #   Array of anonymous hashes containing contacts.
 sub nearby_contacts
 {
@@ -547,7 +552,7 @@ sub add_funding_source
         $self->set_error('Please supply a valid account number.');
         $errors++;
     }
-    if (!defined($trnnum) || $trnnum =~ /^[0-9]{9}$/) {
+    if (!defined($trnnum) || $trnnum !~ /^[0-9]{9}$/) {
         $self->set_error('Please supply a valid routing number.');
         $errors++;
     }
@@ -573,7 +578,7 @@ sub add_funding_source
         'name'           => $acctname
     };
 
-    my $response = $self->_post("fundingsources",$params);
+    my $response = $self->_post("fundingsources/",$params);
 
     return $response;
 }
@@ -633,6 +638,7 @@ sub verify_funding_source
 # Withdraw money from a funding source.
 #
 # Parameters:
+#   self      - Object instance.
 #   sourceid  - Fund source Id.
 #   pin       - Dwolla pin.
 #   amount    - Deposit amount.
@@ -832,7 +838,7 @@ sub send
 #   group_id     - ID specified by the client application.
 #   addtl_fees   - Additional faciliator fees (Array of anonymous hashes)
 #
-# Returns
+# Returns:
 #  Transaction info or false (0) on error
 sub guest_send
 {
@@ -963,7 +969,7 @@ sub request_by_id
     return $response;
 }
 
-# Function: fullfil_request
+# Function: fulfill_request
 #
 # Fulfill a pending money request.
 #
@@ -1108,7 +1114,7 @@ sub transaction
 #   skip   - Number of transactions to skip. Default: 0.
 #
 # Returns:
-#   Array of transactions
+#   Array of transactions / false (0) on error.
 sub listings
 {
     my $self  = shift || undef;
@@ -1120,7 +1126,12 @@ sub listings
     my $params = {};
 
     if (defined($since)) {
-        $params->{'sinceDate'} = $since;
+        if ($since =~ /^\d{2}\-\d{2}\-\d{4}$/) {
+            $params->{'sinceDate'} = $since;
+        } else {
+            $self->set_error("Please supply a date in 'MM-DD-YYYY' format.");
+            return 0;
+        }
     }
 
     if (defined($types)) {
@@ -1352,7 +1363,7 @@ sub verify_gateway_signature
     return 1;
 }
 
-# Function: very_webhook_signature
+# Function: verify_webhook_signature
 #
 # Verify the signature from Webhook notifications.
 #
@@ -1459,7 +1470,7 @@ sub get_errors
 sub set_debug_mode
 {
     my $self       = shift;
-    my $debug_mode = shift;
+    my $debug_mode = shift || 0;
 
     $self->{'debug_mode'} = $debug_mode;
 }
@@ -1472,7 +1483,7 @@ sub set_debug_mode
 #   self   - Object instance.
 #   params - Request query parameters.
 #
-# Returns
+# Returns:
 #   Query string
 sub _http_build_query
 {
@@ -1480,12 +1491,13 @@ sub _http_build_query
     my $params = shift;
 
     my @tmp = ();
+    my $str;
+
     foreach my $key (keys %{$params}) {
-        my $str = uri_escape($key);
         if (defined($params->{$key})) {
-            $str .= '=' . uri_escape($params->{$key});
+            $str = uri_escape($key) . '=' . uri_escape($params->{$key});
+            push(@tmp,$str);
         }
-        push(@tmp,$str);
     }
 
     return join(q{&},@tmp);
@@ -1500,7 +1512,7 @@ sub _http_build_query
 #   url    - Request URL.
 #   params - Request query parameters.
 #
-# Returns
+# Returns:
 #   JSON object or false (0) on failure
 sub _get
 {
@@ -1527,7 +1539,7 @@ sub _get
 #   params        - Request query parameters.
 #   include_token - Whether or not to include OAuth token.
 #
-# Returns
+# Returns:
 #   JSON object or false (0) on failure
 sub _post
 {
@@ -1558,7 +1570,7 @@ sub _post
 #   url    - Request URL.
 #   method - HTTP method. (GET,POST)
 #
-# Returns
+# Returns:
 #   JSON object or false (0) on failure
 sub _api_request
 {

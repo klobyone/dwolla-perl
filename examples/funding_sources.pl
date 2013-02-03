@@ -30,3 +30,31 @@ if (!$fs) {
 } else {
     print Dumper($fs);
 }
+
+# Example 3: Add a funding source.
+
+my $acctnum = '123456';
+my $trnnum  = '123456789';
+my $type    = 'Checking';
+my $name    = 'My Checking';
+
+my $add = $api->add_funding_source($acctnum,$trnnum,$type,$name);
+if (!$add) {
+    print Dumper($api->get_errors());
+} else {
+    print Dumper($add);
+}
+
+# Example 4: Verify a funding source.
+
+my $d1 = '0.01';
+my $d2 = '0.02';
+my $id = 'a4946ae2d2b7f1f880790f31a36887f5';
+
+my $verify = $api->verify_funding_source($id,$d1,$d2);
+if (!$verify) {
+    print Dumper($api->get_errors());
+} else {
+    print Dumper($verify);
+}
+

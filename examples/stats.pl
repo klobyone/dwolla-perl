@@ -12,13 +12,12 @@ my $api = WebService::Dwolla->new();
 # Set key, secret, and OAuth token from config file.
 $api->set_api_config_from_file('/usr/local/etc/dwolla_api.conf');
 
-# Example 1: Retrieve a list of transactions for the user associated with the
-# provided OAuth token.
+# Example 1: Retrieve stats.
 
-my $listings = $api->listings('02-01-2012');
+my $stats = $api->stats();
 
-if (!$listings) {
+if (!$stats) {
     print Dumper($api->get_errors());
 } else {
-    print Dumper($listings);
+    print Dumper($stats);
 }

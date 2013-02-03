@@ -5,7 +5,7 @@ NOTE: This module is in the very early stages. Do not use this for anything but 
 
 ## Version
 
-0.2
+0.03
 
 ## Requrements (Module Dependcies)
 
@@ -27,15 +27,20 @@ The easiest way to install this module is via the CPAN command-line interface.
 It also be can obtained from [here](http://search.cpan.org/~klobyone/). If done
 this way you will have to resolve the dependecies yourself.
 
+NaturalDocs code documatation will be made available [here[(http://pixdiv.com/dwolla-perl/).
+
 ## Examples / Quickstart
 
 This repo includes various usage examples, including:
 
 * Authenticating with OAuth [oauth.cgi]
+* Deposit money [deposit.pl]
+* Withdraw money [withdraw.pl]
 * Register a new Dwolla account [register.pl]
 * Sending money [send.pl]
 * Request money [request.pl]
 * Transaction listings [listings.pl]
+* Transaction stats [stats.pl]
 * Fetching account information [account_info.pl]
 * Grabbing a user's contacts [contacts.pl]
 * Listing a user's funding sources [funding_sources.pl]
@@ -44,11 +49,15 @@ This repo includes various usage examples, including:
 
 ## Changelog
 
-0.2
+0.03
+
+* Numerous fixes. Added / corrected documentation. Added more examples.
+
+0.02
 
 * Added dependenies to Makefile.PL. Added / corrected documentation. Added examples to MANIFEST.
 
-0.1
+0.01
 
 * Initial version.
 

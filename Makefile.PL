@@ -12,6 +12,7 @@ WriteMakefile(
         'Data::Dumper'      => 2.124,
         'LWP::UserAgent'    => 5.833,
         'Crypt::SSLeay'     => 0.57,
+        'Test::More'        => 0,
         'Digest::HMAC'      => 1.01
     },
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
