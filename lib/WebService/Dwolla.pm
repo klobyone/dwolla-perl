@@ -6,7 +6,7 @@ use 5.010001;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use LWP::UserAgent;
 use JSON;
@@ -1093,7 +1093,7 @@ sub transaction
         'client_secret' => $self->{'api_secret'},
     };
 
-    my $response = $self->_get("transaction/$transaction",$params);
+    my $response = $self->_get("transactions/$transaction",$params);
    
     return $response; 
 }
@@ -1123,7 +1123,12 @@ sub listings
     my $limit = shift || 10;
     my $skip  = shift || 0;
 
-    my $params = {};
+    my $params = {
+        'client_id'     => $self->{'api_key'},
+        'client_secret' => $self->{'api_secret'},
+        'limit'         => $limit,
+        'skip'          => $skip
+    };
 
     if (defined($since)) {
         if ($since =~ /^\d{2}\-\d{2}\-\d{4}$/) {
@@ -1138,7 +1143,7 @@ sub listings
         $params->{'types'} = join('|',@{$types});
     }
 
-    my $response = $self->_get("transactions",$params);
+    my $response = $self->_get("transactions/",$params);
 
     return $response; 
 }
@@ -1164,7 +1169,7 @@ sub stats
     my $end_date   = shift || undef;
 
     my $params = {
-        'types'     => join('|',@{$types}),
+        'types'     => join(',',@{$types}),
         'startDate' => $start_date,
         'endDate'   => $end_date
     };
