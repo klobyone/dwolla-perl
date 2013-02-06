@@ -49,6 +49,10 @@ This repo includes various usage examples, including:
 
 ## Changelog
 
+0.04
+
+* Fixed listings / stats. Added more eamples.
+
 0.03
 
 * Numerous fixes. Added / corrected documentation. Added more examples.
