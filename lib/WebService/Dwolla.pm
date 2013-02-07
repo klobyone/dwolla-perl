@@ -6,7 +6,7 @@ use 5.010001;
 use strict;
 use warnings;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use LWP::UserAgent;
 use JSON;
@@ -19,7 +19,8 @@ use constant {
     AUTH_URL     => 'https://www.dwolla.com/oauth/v2/authenticate',
     TOKEN_URL    => 'https://www.dwolla.com/oauth/v2/token',
     GATEWAY_URL  => 'https://www.dwolla.com/payment/request',
-    CHECKOUT_URL => 'https://www.dwolla.com/payment/checkout'
+    CHECKOUT_URL => 'https://www.dwolla.com/payment/checkout',
+    MASSPAY_URL  => 'https://masspay.dwollalabs.com/api'
 };
 
 # Function: new
@@ -1105,29 +1106,33 @@ sub transaction
 #
 # Parameters:
 #   
-#   self   - Object instance.
-#   since  - Earliest date and time for which to retrieve transactions.
-#            Default: 7 days prior to current date / time in UTC. (DD-MM-YYYY)
-#   types  - Types of transactions to retrieve. Options are money_sent, 
-#            money_received, deposit, withdrawal, and fee.
-#   limit  - Number of transactions to retrieve between 1 and 200, Default: 10.
-#   skip   - Number of transactions to skip. Default: 0.
+#   self    - Object instance.
+#   since   - Earliest date and time for which to retrieve transactions.
+#             Default: 7 days prior to current date / time in UTC. (DD-MM-YYYY)
+#   types   - Types of transactions to retrieve. Options are money_sent, 
+#             money_received, deposit, withdrawal, and fee.
+#   limit   - Number of transactions to retrieve between 1 and 200, Default: 10.
+#   skip    - Number of transactions to skip. Default: 0.
+#   groupid - ID specified by the client application. If specified, this call
+#             will only return transactions with IDs matching the given groupId.
 #
 # Returns:
 #   Array of transactions / false (0) on error.
 sub listings
 {
-    my $self  = shift || undef;
-    my $since = shift || undef;
-    my $types = shift || undef;
-    my $limit = shift || 10;
-    my $skip  = shift || 0;
+    my $self    = shift || undef;
+    my $since   = shift || undef;
+    my $types   = shift || undef;
+    my $limit   = shift || 10;
+    my $skip    = shift || 0;
+    my $groupid = shift || undef;
 
     my $params = {
         'client_id'     => $self->{'api_key'},
         'client_secret' => $self->{'api_secret'},
         'limit'         => $limit,
-        'skip'          => $skip
+        'skip'          => $skip,
+        'groupId'       => $groupid
     };
 
     if (defined($since)) {
@@ -1140,7 +1145,7 @@ sub listings
     }
 
     if (defined($types)) {
-        $params->{'types'} = join('|',@{$types});
+        $params->{'types'} = join(',',@{$types});
     }
 
     my $response = $self->_get("transactions/",$params);
@@ -1396,12 +1401,97 @@ sub verify_webhook_signature
     return 1;
 }
 
-# Function: is_id_valid
+# Function: masspay_create_job
 #
-# Determines if provdided Dwolla Id is valid.
+# Send payments in bulk from the user with the given authorized access token.
 #
 # Parameters:
-#   self - Object instances.
+#   pin          - Dwolla pin number.
+#   email        - Email address to send reports.
+#   user_job_id  - A user assigned job ID for the MassPay job.
+#   assume_costs - Should the sending user pay any associated fees?
+#                  1 - Yes; 0 - No;
+#   source       - Desired funding source from which to send money.
+#                  Defaults to Dwolla 'balance'.
+#   filedata     - The bulk payments data. Must be an array reference of
+#                  anonymous hashes.
+#
+# Returns:
+#   MassPay reeponse or false (0) on error.
+sub masspay_create_job
+{
+    my $self         = shift;
+    my $pin          = shift;
+    my $email        = shift;
+    my $user_job_id  = shift;
+    my $assume_costs = shift;
+    my $source       = shift || 'balance';
+    my $filedata     = shift || undef;
+
+    my $test_string = ($self->{'mode'} eq 'test') ? 'true' : 'false';
+
+    my $params = {
+        'pin'         => $pin,
+        'email'       => $email,
+        'source'      => $source,
+        'user_job_id' => $user_job_id,
+        'test'        => $test_string,
+        'filedata'    => $filedata,
+        'assumeCosts' => $assume_costs,
+        'token'       => $self->{'oauth_token'}
+    };
+
+    my $response = $self->_parse_masspay(
+        $self->_api_request(
+            MASSPAY_URL . '/create',
+            'POST',
+            $params
+        )
+    );
+
+    return $response;
+}
+
+# Function: masspay_job_details
+#
+# Parameters:
+#   self        - Object instance.
+#   uid         - Dwolla Id
+#   job_id      - MassPay job id
+#   user_job_id - User-assigned job id.
+#
+# Returns:
+#   Job details or false (0) on set error.
+sub masspay_job_details
+{
+    my $self        = shift;
+    my $uid         = shift;
+    my $job_id      = shift;
+    my $user_job_id = shift || undef;
+
+    my $params = {
+        'uid'         => $uid,
+        'job_id'      => $job_id,
+        'user_job_id' => $user_job_id 
+    };
+
+    my $response = $self->_parse_masspay(
+        $self->_api_request(
+            MASSPAY_URL . '/status',
+            'POST',
+            $params
+        )
+    );
+
+    return $response;
+}   
+
+# Function: is_id_valid
+#
+# Determines if provided Dwolla Id is valid.
+#
+# Parameters:
+#   self - Object instance.
 #   id   - Dwolla Id
 #
 # Returns:
@@ -1413,7 +1503,7 @@ sub is_id_valid
 
     my $valid = 0;
 
-    if ($id =~ /([0-9]{3})\-*([0-9]{3})\-*([0-9]{4})/) {
+    if (defined($id) && $id =~ /([0-9]{3})\-*([0-9]{3})\-*([0-9]{4})/) {
         $valid = 1;
     }
 
@@ -1661,6 +1751,34 @@ sub _parse
     }
     
     return $response->{'Response'};
+}
+
+# Function: _parse_masspay
+#
+# Parse the JSON response from MassPay API request for errors.
+#
+# Parameters:
+#   self     - Object instance.
+#   response - JSON response data.
+#
+# Returns:
+#   JSON response or zero (0) on failure.
+sub _parse_masspay
+{
+    my $self     = shift;
+    my $response = shift;
+
+    if ($self->{'debug_mode'}) {
+        use Data::Dumper;
+        print Data::Dumper->Dump([$response],'response');
+    }
+
+    if (!$response->{'success'}) {
+        $self->set_error($response->{'message'});
+        return 0;
+    }
+
+    return $response->{'job'};
 }
 
 1;

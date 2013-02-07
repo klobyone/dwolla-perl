@@ -27,7 +27,7 @@ The easiest way to install this module is via the CPAN command-line interface.
 It also be can obtained from [here](http://search.cpan.org/~klobyone/). If done
 this way you will have to resolve the dependecies yourself.
 
-NaturalDocs code documatation will be made available [here[(http://pixdiv.com/dwolla-perl/).
+NaturalDocs code documatation will be made available [here](http://pixdiv.com/dwolla-perl/).
 
 ## Examples / Quickstart
 
@@ -48,6 +48,10 @@ This repo includes various usage examples, including:
 * Webhook notifications [webhook.cgi]
 
 ## Changelog
+
+0.05
+
+* Added masspay methods / examples. Added groupId and fixed delimiter in listings. Corrected miscellaneous docs.
 
 0.04
 

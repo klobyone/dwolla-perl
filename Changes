@@ -9,4 +9,6 @@ Revision history for Perl extension WebService::Dwolla.
     - Several fixes. Added / corrected documetation. Added more examples.
 0.04  Wed Feb 06 00:30:54 2013
     - Fixed transactions-related methods (listings,stats). Added more examples.
+0.05  Thu Feb 07 00:30:54 2013
+    - Added masspay methods / examples. Added groupId and fixed delimiter in listings. Corrected miscellaneous docs.
 
